@@ -41,16 +41,16 @@
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // URL 파라미터에서 게시글 ID 가져오기
+        // URL 파라미터에서 게시글 타이틀(title) 가져오기
         const urlParams = new URLSearchParams(window.location.search);
-        const postId = urlParams.get('id');
+        const postTitle = urlParams.get('title');
 
         let currentPostPassword = '';
 
         async function loadPostDetail() {
             const container = document.getElementById('post-container');
 
-            if (!postId) {
+            if (!postTitle) {
                 alert('잘못된 접근입니다.');
                 location.href = 'board.html';
                 return;
@@ -60,7 +60,7 @@
                 const { data, error } = await supabase
                     .from('posts')
                     .select('*')
-                    .eq('id', postId)
+                    .eq('title', postTitle)
                     .single();
 
                 if (error) throw error;
@@ -104,7 +104,7 @@
                 const { error } = await supabase
                     .from('posts')
                     .delete()
-                    .eq('id', postId);
+                    .eq('title', postTitle);
 
                 if (error) throw error;
 
