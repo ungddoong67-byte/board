@@ -101,46 +101,62 @@
                         <td class="date-col">${date}</td>
                     `;
 
-                    // 내용 행 (기본 숨김)
-                    const trContent = document.createElement('tr');
-                    trContent.id = contentId;
-                    trContent.className = 'content-row';
-                    trContent.innerHTML = `
-                        <td colspan="3">
-                            <div class="content-box">
-                                <strong>[글 내용]</strong><br>
-                                ${escapeHtml(item.content)}
-                            </div>
-                        </td>
-                    `;
+// 내용 행 (삭제 버튼 포함)
+            const trContent = document.createElement('tr');
+            trContent.id = contentId;
+            trContent.className = 'content-row';
+            trContent.innerHTML = `
+                <td colspan="3">
+                    <div class="content-box">
+                        <strong>[글 내용]</strong><br>
+                        ${escapeHtml(item.content)}
+                        
+                        <!-- 삭제 버튼 영역 -->
+                        <div style="margin-top: 15px; text-align: right;">
+                            <button onclick="deletePost(${item.id}, '${item.password}')" 
+                                    style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                🗑️ 게시물 삭제
+                            </button>
+                        </div>
+                    </div>
+                </td>
+            `;
 
-                    listElement.appendChild(trTitle);
-                    listElement.appendChild(trContent);
-                });
-            } catch (err) {
-                console.error('글 불러오기 실패:', err);
-                listElement.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">오류 발생: ${err.message}</td></tr>`;
-            }
+            listElement.appendChild(trTitle);
+            listElement.appendChild(trContent);
+        });
+    }
+
+    // 2. 게시물 삭제 처리 함수 추가
+    window.deletePost = async function(id, originalPassword) {
+        // 삭제 비밀번호 확인
+        const inputPassword = prompt("글 등록 시 설정한 비밀번호를 입력하세요:");
+
+        if (inputPassword === null) return; // 취소 누른 경우
+
+        // 비밀번호 비교 (비밀번호 컬럼을 안 쓰셨다면 이 조건문을 빼시면 됩니다)
+        if (originalPassword && inputPassword !== originalPassword) {
+            alert("비밀번호가 일치하지 않습니다.");
+            return;
         }
 
-        // 내용 토글 열기/닫기
-        window.toggleContent = function(id) {
-            const target = document.getElementById(id);
-            if (target.style.display === 'table-row') {
-                target.style.display = 'none';
-            } else {
-                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
-                target.style.display = 'table-row';
-            }
-        };
+        if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
 
-        function escapeHtml(text) {
-            return text
-                ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
-                : '';
+        try {
+            const { error } = await supabase
+                .from('posts')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            alert("게시글이 삭제되었습니다.");
+            loadPosts(); // 목록 재불러오기
+        } catch (err) {
+            console.error("삭제 실패:", err);
+            alert("삭제에 실패했습니다: " + err.message);
         }
-
-        loadPosts();
-    </script>
+    };
+</script>
 </body>
 </html>
