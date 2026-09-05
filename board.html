@@ -8,14 +8,11 @@
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
         .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; margin-bottom: 20px; }
         .header-box h1 { margin: 0; color: #333; }
-        
         .btn-write { background-color: #3ecf8e; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; }
         .btn-write:hover { background-color: #2eaf72; }
-
         .board-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .board-table th, .board-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         .board-table th { background-color: #3ecf8e; color: white; }
-
         .post-row { cursor: pointer; transition: background-color 0.2s; }
         .post-row:hover { background-color: #f1f1f1; }
         .post-title { font-weight: bold; color: #2b2b2b; text-decoration: none; display: block; }
@@ -24,17 +21,14 @@
     </style>
 </head>
 <body>
-
     <nav style="margin-bottom: 20px;">
         <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
         <a href="_layouts/board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
     </nav>
-
     <div class="header-box">
         <h1>자유 게시판</h1>
         <a href="write.html" class="btn-write">✏️ 글쓰기</a>
     </div>
-
     <table class="board-table">
         <thead>
             <tr>
@@ -49,7 +43,6 @@
             </tr>
         </tbody>
     </table>
-
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
@@ -81,9 +74,13 @@
 
                     const tr = document.createElement('tr');
                     tr.className = 'post-row';
-                    tr.onclick = () => { location.href = `view.html?id=${item.id}`; };
+                    
+                    // 타이틀 기반 URL 파라미터 적용 (encodeURIComponent 처리)
+                    const targetUrl = `view.html?title=${encodeURIComponent(item.title)}`;
+
+                    tr.onclick = () => { location.href = targetUrl; };
                     tr.innerHTML = `
-                        <td><a href="view.html?id=${item.id}" class="post-title">💬 ${escapeHtml(item.title)}</a></td>
+                        <td><a href="${targetUrl}" class="post-title">💬 ${escapeHtml(item.title)}</a></td>
                         <td class="writer-col">${escapeHtml(item.writer)}</td>
                         <td class="date-col">${date}</td>
                     `;
