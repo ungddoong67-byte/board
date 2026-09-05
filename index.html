@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>자유 게시판</title>
+    <title>Supabase 자유 게시판</title>
+    <!-- Supabase JS CDN 불러오기 -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
-        h1 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        h1 { color: #333; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; }
         
         /* 글쓰기 폼 스타일 */
         .write-box { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 30px; }
         .write-box input, .write-box textarea { width: 100%; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
         .write-box textarea { height: 100px; resize: vertical; }
-        .write-box button { background-color: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
-        .write-box button:hover { background-color: #0056b3; }
+        .write-box button { background-color: #3ecf8e; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
+        .write-box button:hover { background-color: #2eaf72; }
 
-        /* 글 목록 테이블 스타일 */
+        /* 게시글 목록 스타일 */
         .board-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .board-table th, .board-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        .board-table th { background-color: #007bff; color: white; }
+        .board-table th { background-color: #3ecf8e; color: white; }
         .board-table tr:hover { background-color: #f1f1f1; }
         .date-col { width: 150px; font-size: 0.85em; color: #666; text-align: center; }
         .writer-col { width: 100px; text-align: center; }
@@ -29,10 +31,10 @@
     <!-- 상단 메뉴 -->
     <nav style="margin-bottom: 20px;">
         <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
-        <a href="board.html" style="text-decoration: none; color: #007bff; font-weight: bold;">게시판</a>
+        <a href="board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
     </nav>
 
-    <h1>자유 게시판</h1>
+    <h1>Supabase 자유 게시판</h1>
 
     <!-- 1. 글 작성 폼 -->
     <div class="write-box">
@@ -60,101 +62,92 @@
         </tbody>
     </table>
 
-    <!-- Firebase SDK (v10 모듈 방식) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getFirestore, collection, addDoc, getDocs, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    <script>
+        // ⚠️ 본인의 Supabase 정보로 변경하세요!
+        const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co";
+        const SUPABASE_ANON_KEY = "YOUR_ANON_KEY";
 
-        // ⚠️ 본인의 Firebase Config 정보로 교체하세요!
-        const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_PROJECT_ID.appspot.com",
-            messagingSenderId: "YOUR_SENDER_ID",
-            appId: "YOUR_APP_ID"
-        };
+        // Supabase 클라이언트 초기화
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // Firebase 및 Firestore 초기화
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-
-        // [기능 1] 게시글 불러오기 (목록 출력)
+        // [기능 1] 게시글 불러오기 (Read)
         async function loadPosts() {
             const listElement = document.getElementById('board-list');
-            
-            try {
-                // 작성일(createdAt) 기준 내림차순(최신순) 정렬
-                const q = query(collection(db, "posts"), orderBy("createdAt", "desc"));
-                const querySnapshot = await getDocs(q);
-                
-                listElement.innerHTML = ''; // 기존 목록 초기화
 
-                if (querySnapshot.empty) {
+            try {
+                // posts 테이블에서 최신순(created_at 내림차순) 정렬 조회
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                listElement.innerHTML = ''; // 초기화
+
+                if (!data || data.length === 0) {
                     listElement.innerHTML = '<tr><td colspan="3" style="text-align: center;">작성된 게시글이 없습니다.</td></tr>';
                     return;
                 }
 
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const date = data.createdAt ? new Date(data.createdAt.seconds * 1000).toLocaleDateString('ko-KR') : '방금 전';
-                    
+                data.forEach(item => {
+                    const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '방금 전';
+
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td><strong>${escapeHtml(data.title)}</strong><br><small style="color:#666">${escapeHtml(data.content)}</small></td>
-                        <td class="writer-col">${escapeHtml(data.writer)}</td>
+                        <td><strong>${escapeHtml(item.title)}</strong><br><small style="color:#666">${escapeHtml(item.content)}</small></td>
+                        <td class="writer-col">${escapeHtml(item.writer)}</td>
                         <td class="date-col">${date}</td>
                     `;
                     listElement.appendChild(tr);
                 });
-            } catch (error) {
-                console.error("글 불러오기 에러:", error);
+            } catch (err) {
+                console.error('글 불러오기 실패:', err);
                 listElement.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">게시글을 불러오지 못했습니다.</td></tr>';
             }
         }
 
-        // [기능 2] 게시글 저장하기
-        window.writePost = async function() {
+        // [기능 2] 게시글 저장하기 (Create)
+        async function writePost() {
             const writer = document.getElementById('writer').value.trim();
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value.trim();
 
             if (!writer || !title || !content) {
-                alert('모든 항목을 입력해 주세요!');
+                alert('모든 입력란을 작성해 주세요!');
                 return;
             }
 
             try {
-                await addDoc(collection(db, "posts"), {
-                    writer: writer,
-                    title: title,
-                    content: content,
-                    createdAt: serverTimestamp()
-                });
+                const { error } = await supabase
+                    .from('posts')
+                    .insert([{ writer, title, content }]);
+
+                if (error) throw error;
 
                 alert('글이 성공적으로 등록되었습니다!');
-                
-                // 폼 초기화
+
+                // Input 초기화
                 document.getElementById('writer').value = '';
                 document.getElementById('title').value = '';
                 document.getElementById('content').value = '';
 
-                // 목록 새로고침
+                // 목록 갱신
                 loadPosts();
-            } catch (error) {
-                console.error("글 저장 에러:", error);
-                alert('글 등록에 실패했습니다.');
+            } catch (err) {
+                console.error('글 작성 실패:', err);
+                alert('글 등록 중 오류가 발생했습니다.');
             }
-        };
+        }
 
-        // 보안용 문자 스크립트 처리 (XSS 방지)
+        // XSS 대리 방지용 함수
         function escapeHtml(text) {
             return text
                 ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
                 : '';
         }
 
-        // 페이지 로드 시 글 목록 불러오기
+        // 첫 로딩 시 목록 실행
         loadPosts();
     </script>
 </body>
