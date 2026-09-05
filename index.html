@@ -5,7 +5,57 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Supabase 자유 게시판</title>
     <!-- Supabase JS CDN 불러오기 -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- JS 스크립트 부분을 아래 모듈 방식으로 작성 -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        // ⚠️ 본인 정보로 교체
+        const SUPABASE_URL = "https://xxxx.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGci...";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 글 불러오기
+        async function loadPosts() {
+            const listElement = document.getElementById('board-list');
+            const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
+
+            if (error) {
+                console.error('에러 상세:', error);
+                listElement.innerHTML = `<tr><td colspan="3" style="color:red;">오류 발생: ${error.message}</td></tr>`;
+                return;
+            }
+
+            listElement.innerHTML = '';
+            if (!data || data.length === 0) {
+                listElement.innerHTML = '<tr><td colspan="3" style="text-align:center;">게시글이 없습니다.</td></tr>';
+                return;
+            }
+
+            data.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${item.title}</td><td>${item.writer}</td><td>${new Date(item.created_at).toLocaleDateString()}</td>`;
+                listElement.appendChild(tr);
+            });
+        }
+
+        // 글 저장하기
+        window.writePost = async function() {
+            const writer = document.getElementById('writer').value;
+            const title = document.getElementById('title').value;
+            const content = document.getElementById('content').value;
+
+            const { error } = await supabase.from('posts').insert([{ writer, title, content }]);
+            if (error) {
+                alert('글 등록 실패: ' + error.message);
+            } else {
+                alert('글이 등록되었습니다!');
+                loadPosts();
+            }
+        };
+
+        loadPosts();
+    </script>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
         h1 { color: #333; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; }
