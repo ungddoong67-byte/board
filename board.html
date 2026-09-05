@@ -6,36 +6,31 @@
     <title>게시판 목록</title>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
-        
         .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; margin-bottom: 20px; }
         .header-box h1 { margin: 0; color: #333; }
         
-        /* 글쓰기 버튼 스타일 */
         .btn-write { background-color: #3ecf8e; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; }
         .btn-write:hover { background-color: #2eaf72; }
 
-        /* 게시글 목록 테이블 스타일 */
         .board-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .board-table th, .board-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         .board-table th { background-color: #3ecf8e; color: white; }
-        
+
         .post-row { cursor: pointer; transition: background-color 0.2s; }
         .post-row:hover { background-color: #f1f1f1; }
         .post-title { font-weight: bold; color: #2b2b2b; }
         .date-col { width: 120px; font-size: 0.85em; color: #666; text-align: center; }
         .writer-col { width: 100px; text-align: center; }
 
-        /* 클릭 시 펼쳐지는 내용 레이어 */
         .content-row { display: none; background-color: #fdfdfd; }
         .content-box { padding: 15px 20px; border-top: 1px dashed #eee; color: #444; line-height: 1.6; white-space: pre-wrap; }
     </style>
 </head>
 <body>
 
-    <!-- 상단 메뉴 -->
     <nav style="margin-bottom: 20px;">
         <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
-        <a href="board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
+        <a href="_layouts/board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
     </nav>
 
     <div class="header-box">
@@ -43,7 +38,6 @@
         <a href="write.html" class="btn-write">✏️ 글쓰기</a>
     </div>
 
-    <!-- 게시글 목록 테이블 -->
     <table class="board-table">
         <thead>
             <tr>
@@ -62,14 +56,13 @@
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-        // ⚠️ 본인의 URL과 KEY로 수정하세요! (URL 끝에 / 없이!)
         const SUPABASE_URL = "https://opddudayojvbfxpqsyxs.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZGR1ZGF5b2p2YmZ4cHFzeXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODc4NDEsImV4cCI6MjEwNDE2Mzg0MX0.j2nrQze_BGf7uTEKz3rLM79enpKpbD-AP7bK5pzooxM";
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // 게시글 목록 불러오기
-        async function loadPosts() {
+        // [수정 1] 함수들을 전역(window)에 등록하여 HTML 이벤트(onclick 등)에서 접근 가능하게 처리
+        window.loadPosts = async function() {
             const listElement = document.getElementById('board-list');
 
             try {
@@ -91,7 +84,7 @@
                     const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '방금 전';
                     const contentId = `content-${index}`;
 
-                    // 제목 행
+                    // 1) 제목 행
                     const trTitle = document.createElement('tr');
                     trTitle.className = 'post-row';
                     trTitle.onclick = () => toggleContent(contentId);
@@ -101,62 +94,79 @@
                         <td class="date-col">${date}</td>
                     `;
 
-// 내용 행 (삭제 버튼 포함)
-            const trContent = document.createElement('tr');
-            trContent.id = contentId;
-            trContent.className = 'content-row';
-            trContent.innerHTML = `
-                <td colspan="3">
-                    <div class="content-box">
-                        <strong>[글 내용]</strong><br>
-                        ${escapeHtml(item.content)}
-                        
-                        <!-- 삭제 버튼 영역 -->
-                        <div style="margin-top: 15px; text-align: right;">
-                            <button onclick="deletePost(${item.id}, '${item.password}')" 
-                                    style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                                🗑️ 게시물 삭제
-                            </button>
-                        </div>
-                    </div>
-                </td>
-            `;
+                    // 2) 내용 행 (삭제 버튼 포함)
+                    const trContent = document.createElement('tr');
+                    trContent.id = contentId;
+                    trContent.className = 'content-row';
+                    trContent.innerHTML = `
+                        <td colspan="3">
+                            <div class="content-box">
+                                <strong>[글 내용]</strong><br>
+                                ${escapeHtml(item.content)}
+                                <div style="margin-top: 15px; text-align: right;">
+                                    <button onclick="deletePost(${item.id}, '${item.password}')" 
+                                            style="background-color: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                                        🗑️ 게시물 삭제
+                                    </button>
+                                </div>
+                            </div>
+                        </td>
+                    `;
 
-            listElement.appendChild(trTitle);
-            listElement.appendChild(trContent);
-        });
-    }
+                    listElement.appendChild(trTitle);
+                    listElement.appendChild(trContent);
+                });
+            } catch (err) {
+                console.error('글 불러오기 실패:', err);
+                listElement.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">오류 발생: ${err.message}</td></tr>`;
+            }
+        };
 
-    // 2. 게시물 삭제 처리 함수 추가
-    window.deletePost = async function(id, originalPassword) {
-        // 삭제 비밀번호 확인
-        const inputPassword = prompt("글 등록 시 설정한 비밀번호를 입력하세요:");
+        // [수정 2] 토글 함수 추가
+        window.toggleContent = function(id) {
+            const target = document.getElementById(id);
+            if (target.style.display === 'table-row') {
+                target.style.display = 'none';
+            } else {
+                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                target.style.display = 'table-row';
+            }
+        };
 
-        if (inputPassword === null) return; // 취소 누른 경우
+        // [수정 3] 삭제 처리 함수
+        window.deletePost = async function(id, originalPassword) {
+            const inputPassword = prompt("글 등록 시 설정한 비밀번호를 입력하세요:");
+            if (inputPassword === null) return;
 
-        // 비밀번호 비교 (비밀번호 컬럼을 안 쓰셨다면 이 조건문을 빼시면 됩니다)
-        if (originalPassword && inputPassword !== originalPassword) {
-            alert("비밀번호가 일치하지 않습니다.");
-            return;
+            if (originalPassword && originalPassword !== 'undefined' && inputPassword !== originalPassword) {
+                alert("비밀번호가 일치하지 않습니다.");
+                return;
+            }
+
+            if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
+
+            try {
+                const { error } = await supabase
+                    .from('posts')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert("게시글이 삭제되었습니다.");
+                window.loadPosts();
+            } catch (err) {
+                console.error("삭제 실패:", err);
+                alert("삭제에 실패했습니다: " + err.message);
+            }
+        };
+
+        function escapeHtml(text) {
+            return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
         }
 
-        if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
-
-        try {
-            const { error } = await supabase
-                .from('posts')
-                .delete()
-                .eq('id', id);
-
-            if (error) throw error;
-
-            alert("게시글이 삭제되었습니다.");
-            loadPosts(); // 목록 재불러오기
-        } catch (err) {
-            console.error("삭제 실패:", err);
-            alert("삭제에 실패했습니다: " + err.message);
-        }
-    };
-</script>
+        // 페이지 로드시 게시글 목록 조회 실행
+        window.loadPosts();
+    </script>
 </body>
 </html>
