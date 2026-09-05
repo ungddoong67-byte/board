@@ -24,7 +24,7 @@
     <!-- 상단 메뉴 -->
     <nav style="margin-bottom: 20px;">
         <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
-        <a href="_layouts/board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
+        <a href="board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
     </nav>
 
     <h1>게시글 작성</h1>
@@ -45,7 +45,7 @@
 
         <div class="btn-group">
             <button class="btn-submit" onclick="writePost()">등록하기</button>
-            <a href="_layouts/board.html" class="btn-cancel">취소</a>
+            <a href="/board.html" class="btn-cancel">취소</a>
         </div>
     </div>
 
@@ -131,7 +131,7 @@
                 if (error) throw error;
 
                 alert('글이 성공적으로 등록되었습니다!');
-                location.href = '_layouts/board.html';
+                location.href = '/board.html';
             } catch (err) {
                 console.error('글 작성 실패:', err);
                 alert('글 등록 실패: ' + err.message);
