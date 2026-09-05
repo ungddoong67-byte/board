@@ -6,52 +6,57 @@
     <title>게시글 보기</title>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
-        .view-card { background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .view-card { background: white; border-radius: 8px; padding: 25px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .post-header { border-bottom: 2px solid #3ecf8e; padding-bottom: 15px; margin-bottom: 20px; }
-        .post-title { font-size: 24px; font-weight: bold; margin: 0 0 10px 0; color: #222; }
-        .post-info { font-size: 14px; color: #666; }
-        .post-content { font-size: 16px; line-height: 1.8; color: #333; min-height: 150px; white-space: pre-wrap; margin-bottom: 30px; }
+        .post-title-text { font-size: 24px; color: #333; margin: 0 0 10px 0; }
+        .post-info { font-size: 14px; color: #666; display: flex; gap: 15px; }
+        
+        .post-content { line-height: 1.8; color: #444; min-height: 200px; white-space: pre-wrap; font-size: 16px; margin-bottom: 30px; }
         
         .btn-group { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 20px; }
-        .btn { padding: 10px 18px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 14px; cursor: pointer; border: none; }
+        .btn { padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .btn-list { background-color: #6c757d; color: white; }
         .btn-delete { background-color: #dc3545; color: white; }
+        .btn-list:hover { background-color: #5a6268; }
+        .btn-delete:hover { background-color: #bd2130; }
     </style>
 </head>
 <body>
 
-    <!-- 상단 메뉴 -->
     <nav style="margin-bottom: 20px;">
-        <a href="_layouts/board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판 목록으로 돌아가기</a>
+        <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
+        <a href="_layouts/board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
     </nav>
 
-    <div class="view-card" id="post-card">
-        <p style="text-align: center; color: #666;">게시글을 불러오는 중입니다...</p>
+    <div class="view-card" id="post-container">
+        <div style="text-align: center; padding: 40px; color: #666;">게시글을 불러오는 중입니다...</div>
     </div>
 
     <script type="module">
         import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
 
-        // ⚠️ 본인 Supabase 정보로 교체하세요! (URL 끝에 / 없이)
         const SUPABASE_URL = "https://opddudayojvbfxpqsyxs.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZGR1ZGF5b2p2YmZ4cHFzeXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODc4NDEsImV4cCI6MjEwNDE2Mzg0MX0.j2nrQze_BGf7uTEKz3rLM79enpKpbD-AP7bK5pzooxM";
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // URL 파라미터에서 id 값 가져오기 (예: view.html?id=5 -> 5 추출)
+        // URL 파라미터에서 게시글 ID 가져오기
         const urlParams = new URLSearchParams(window.location.search);
         const postId = urlParams.get('id');
 
-        async function loadSinglePost() {
-            const cardElement = document.getElementById('post-card');
+        let currentPostPassword = '';
+
+        async function loadPostDetail() {
+            const container = document.getElementById('post-container');
 
             if (!postId) {
-                cardElement.innerHTML = '<p style="color: red; text-align: center;">잘못된 접근입니다. 게시글 ID가 없습니다.</p>';
+                alert('잘못된 접근입니다.');
+                location.href = '_layouts/board.html';
                 return;
             }
 
             try {
-                // 해당 id의 게시글 단 1개만 조회
                 const { data, error } = await supabase
                     .from('posts')
                     .select('*')
@@ -60,50 +65,54 @@
 
                 if (error) throw error;
 
+                currentPostPassword = data.password;
                 const date = data.created_at ? new Date(data.created_at).toLocaleString('ko-KR') : '';
 
-                // 문서 제목(탭 타이틀) 변경
-                document.title = data.title;
-
-                cardElement.innerHTML = `
+                container.innerHTML = `
                     <div class="post-header">
-                        <h1 class="post-title">${escapeHtml(data.title)}</h1>
+                        <h2 class="post-title-text">💬 ${escapeHtml(data.title)}</h2>
                         <div class="post-info">
-                            작성자: <strong>${escapeHtml(data.writer)}</strong> | 작성일: ${date}
+                            <span><strong>작성자:</strong> ${escapeHtml(data.writer)}</span>
+                            <span><strong>작성일:</strong> ${date}</span>
                         </div>
                     </div>
                     <div class="post-content">${escapeHtml(data.content)}</div>
                     <div class="btn-group">
-                        <a href="board.html" class="btn btn-list">목록보기</a>
-                        <button class="btn btn-delete" onclick="deletePost(${data.id}, '${data.password}')">삭제하기</button>
+                        <a href="_layouts/board.html" class="btn btn-list">📋 목록으로</a>
+                        <button onclick="deleteCurrentPost()" class="btn btn-delete">🗑️ 게시물 삭제</button>
                     </div>
                 `;
             } catch (err) {
-                console.error('글 불러오기 실패:', err);
-                cardElement.innerHTML = '<p style="color: red; text-align: center;">존재하지 않거나 삭제된 게시글입니다.</p>';
+                console.error('글 상세 불러오기 실패:', err);
+                container.innerHTML = `<div style="text-align: center; color: red; padding: 40px;">게시글을 불러올 수 없습니다: ${err.message}</div>`;
             }
         }
 
-        // 게시글 삭제 처리
-        window.deletePost = async function(id, originalPassword) {
-            const inputPassword = prompt("글 작성 시 설정한 비밀번호를 입력하세요:");
+        // 삭제 처리 함수
+        window.deleteCurrentPost = async function() {
+            const inputPassword = prompt("글 등록 시 설정한 비밀번호를 입력하세요:");
             if (inputPassword === null) return;
 
-            if (originalPassword && originalPassword !== 'undefined' && inputPassword !== originalPassword) {
+            if (currentPostPassword && currentPostPassword !== 'undefined' && inputPassword !== currentPostPassword) {
                 alert("비밀번호가 일치하지 않습니다.");
                 return;
             }
 
-            if (!confirm("정말로 삭제하시겠습니까?")) return;
+            if (!confirm("정말로 이 게시글을 삭제하시겠습니까?")) return;
 
             try {
-                const { error } = await supabase.from('posts').delete().eq('id', id);
+                const { error } = await supabase
+                    .from('posts')
+                    .delete()
+                    .eq('id', postId);
+
                 if (error) throw error;
 
-                alert("삭제되었습니다.");
+                alert("게시글이 삭제되었습니다.");
                 location.href = '_layouts/board.html';
             } catch (err) {
-                alert("삭제 실패: " + err.message);
+                console.error("삭제 실패:", err);
+                alert("삭제에 실패했습니다: " + err.message);
             }
         };
 
@@ -111,7 +120,7 @@
             return text ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;") : '';
         }
 
-        loadSinglePost();
+        loadPostDetail();
     </script>
 </body>
 </html>
