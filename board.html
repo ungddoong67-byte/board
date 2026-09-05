@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>게시판 목록</title>
+    <style>
+        body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
+        
+        .header-box { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; margin-bottom: 20px; }
+        .header-box h1 { margin: 0; color: #333; }
+        
+        /* 글쓰기 버튼 스타일 */
+        .btn-write { background-color: #3ecf8e; color: white; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; }
+        .btn-write:hover { background-color: #2eaf72; }
+
+        /* 게시글 목록 테이블 스타일 */
+        .board-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .board-table th, .board-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        .board-table th { background-color: #3ecf8e; color: white; }
+        
+        .post-row { cursor: pointer; transition: background-color 0.2s; }
+        .post-row:hover { background-color: #f1f1f1; }
+        .post-title { font-weight: bold; color: #2b2b2b; }
+        .date-col { width: 120px; font-size: 0.85em; color: #666; text-align: center; }
+        .writer-col { width: 100px; text-align: center; }
+
+        /* 클릭 시 펼쳐지는 내용 레이어 */
+        .content-row { display: none; background-color: #fdfdfd; }
+        .content-box { padding: 15px 20px; border-top: 1px dashed #eee; color: #444; line-height: 1.6; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+    <!-- 상단 메뉴 -->
+    <nav style="margin-bottom: 20px;">
+        <a href="index.html" style="text-decoration: none; color: #333; font-weight: bold;">홈</a> | 
+        <a href="board.html" style="text-decoration: none; color: #3ecf8e; font-weight: bold;">게시판</a>
+    </nav>
+
+    <div class="header-box">
+        <h1>자유 게시판</h1>
+        <a href="write.html" class="btn-write">✏️ 글쓰기</a>
+    </div>
+
+    <!-- 게시글 목록 테이블 -->
+    <table class="board-table">
+        <thead>
+            <tr>
+                <th>제목</th>
+                <th class="writer-col">작성자</th>
+                <th class="date-col">작성일</th>
+            </tr>
+        </thead>
+        <tbody id="board-list">
+            <tr>
+                <td colspan="3" style="text-align: center;">게시글을 불러오는 중입니다...</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        // ⚠️ 본인의 URL과 KEY로 수정하세요! (URL 끝에 / 없이!)
+        const SUPABASE_URL = "https://opddudayojvbfxpqsyxs.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZGR1ZGF5b2p2YmZ4cHFzeXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODc4NDEsImV4cCI6MjEwNDE2Mzg0MX0.j2nrQze_BGf7uTEKz3rLM79enpKpbD-AP7bK5pzooxM";
+
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // 게시글 목록 불러오기
+        async function loadPosts() {
+            const listElement = document.getElementById('board-list');
+
+            try {
+                const { data, error } = await supabase
+                    .from('posts')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                listElement.innerHTML = '';
+
+                if (!data || data.length === 0) {
+                    listElement.innerHTML = '<tr><td colspan="3" style="text-align: center;">작성된 게시글이 없습니다.</td></tr>';
+                    return;
+                }
+
+                data.forEach((item, index) => {
+                    const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '방금 전';
+                    const contentId = `content-${index}`;
+
+                    // 제목 행
+                    const trTitle = document.createElement('tr');
+                    trTitle.className = 'post-row';
+                    trTitle.onclick = () => toggleContent(contentId);
+                    trTitle.innerHTML = `
+                        <td class="post-title">💬 ${escapeHtml(item.title)}</td>
+                        <td class="writer-col">${escapeHtml(item.writer)}</td>
+                        <td class="date-col">${date}</td>
+                    `;
+
+                    // 내용 행 (기본 숨김)
+                    const trContent = document.createElement('tr');
+                    trContent.id = contentId;
+                    trContent.className = 'content-row';
+                    trContent.innerHTML = `
+                        <td colspan="3">
+                            <div class="content-box">
+                                <strong>[글 내용]</strong><br>
+                                ${escapeHtml(item.content)}
+                            </div>
+                        </td>
+                    `;
+
+                    listElement.appendChild(trTitle);
+                    listElement.appendChild(trContent);
+                });
+            } catch (err) {
+                console.error('글 불러오기 실패:', err);
+                listElement.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">오류 발생: ${err.message}</td></tr>`;
+            }
+        }
+
+        // 내용 토글 열기/닫기
+        window.toggleContent = function(id) {
+            const target = document.getElementById(id);
+            if (target.style.display === 'table-row') {
+                target.style.display = 'none';
+            } else {
+                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                target.style.display = 'table-row';
+            }
+        };
+
+        function escapeHtml(text) {
+            return text
+                ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
+                : '';
+        }
+
+        loadPosts();
+    </script>
+</body>
+</html>
