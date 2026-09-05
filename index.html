@@ -3,59 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Supabase 자유 게시판</title>
-    <!-- Supabase JS CDN 불러오기 -->
-<!-- JS 스크립트 부분을 아래 모듈 방식으로 작성 -->
-    <script type="module">
-        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
-
-        // ⚠️ 본인 정보로 교체
-        const SUPABASE_URL = "https://opddudayojvbfxpqsyxs.supabase.co";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZGR1ZGF5b2p2YmZ4cHFzeXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODc4NDEsImV4cCI6MjEwNDE2Mzg0MX0.j2nrQze_BGf7uTEKz3rLM79enpKpbD-AP7bK5pzooxM";
-
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        // 글 불러오기
-        async function loadPosts() {
-            const listElement = document.getElementById('board-list');
-            const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false });
-
-            if (error) {
-                console.error('에러 상세:', error);
-                listElement.innerHTML = `<tr><td colspan="3" style="color:red;">오류 발생: ${error.message}</td></tr>`;
-                return;
-            }
-
-            listElement.innerHTML = '';
-            if (!data || data.length === 0) {
-                listElement.innerHTML = '<tr><td colspan="3" style="text-align:center;">게시글이 없습니다.</td></tr>';
-                return;
-            }
-
-            data.forEach(item => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${item.title}</td><td>${item.writer}</td><td>${new Date(item.created_at).toLocaleDateString()}</td>`;
-                listElement.appendChild(tr);
-            });
-        }
-
-        // 글 저장하기
-        window.writePost = async function() {
-            const writer = document.getElementById('writer').value;
-            const title = document.getElementById('title').value;
-            const content = document.getElementById('content').value;
-
-            const { error } = await supabase.from('posts').insert([{ writer, title, content }]);
-            if (error) {
-                alert('글 등록 실패: ' + error.message);
-            } else {
-                alert('글이 등록되었습니다!');
-                loadPosts();
-            }
-        };
-
-        loadPosts();
-    </script>
+    <title>Supabase 게시판</title>
     <style>
         body { font-family: 'Noto Sans KR', sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f8f9fa; }
         h1 { color: #333; border-bottom: 2px solid #3ecf8e; padding-bottom: 10px; }
@@ -67,13 +15,21 @@
         .write-box button { background-color: #3ecf8e; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; }
         .write-box button:hover { background-color: #2eaf72; }
 
-        /* 게시글 목록 스타일 */
+        /* 게시글 목록 테이블 스타일 */
         .board-table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .board-table th, .board-table td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         .board-table th { background-color: #3ecf8e; color: white; }
-        .board-table tr:hover { background-color: #f1f1f1; }
-        .date-col { width: 150px; font-size: 0.85em; color: #666; text-align: center; }
+        
+        /* 클릭 가능한 제목 행 스타일 */
+        .post-row { cursor: pointer; transition: background-color 0.2s; }
+        .post-row:hover { background-color: #f1f1f1; }
+        .post-title { font-weight: bold; color: #2b2b2b; }
+        .date-col { width: 120px; font-size: 0.85em; color: #666; text-align: center; }
         .writer-col { width: 100px; text-align: center; }
+
+        /* 클릭 시 나타나는 내용 상세 영역 스타일 */
+        .content-row { display: none; background-color: #fdfdfd; }
+        .content-box { padding: 15px 20px; border-top: 1px dashed #eee; color: #444; line-height: 1.6; white-space: pre-wrap; }
     </style>
 </head>
 <body>
@@ -112,20 +68,21 @@
         </tbody>
     </table>
 
-    <script>
-        // ⚠️ 본인의 Supabase 정보로 변경하세요!
+    <!-- ES Module 방식으로 Supabase 로드 -->
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+
+        // ⚠️ 본인의 URL과 KEY로 수정하세요! (URL 끝에 / 없이!)
         const SUPABASE_URL = "https://opddudayojvbfxpqsyxs.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9wZGR1ZGF5b2p2YmZ4cHFzeXhzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODg1ODc4NDEsImV4cCI6MjEwNDE2Mzg0MX0.j2nrQze_BGf7uTEKz3rLM79enpKpbD-AP7bK5pzooxM";
 
-        // Supabase 클라이언트 초기화
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // [기능 1] 게시글 불러오기 (Read)
+        // [기능 1] 게시글 불러오기 (클릭 이벤트 포함)
         async function loadPosts() {
             const listElement = document.getElementById('board-list');
 
             try {
-                // posts 테이블에서 최신순(created_at 내림차순) 정렬 조회
                 const { data, error } = await supabase
                     .from('posts')
                     .select('*')
@@ -133,32 +90,51 @@
 
                 if (error) throw error;
 
-                listElement.innerHTML = ''; // 초기화
+                listElement.innerHTML = '';
 
                 if (!data || data.length === 0) {
                     listElement.innerHTML = '<tr><td colspan="3" style="text-align: center;">작성된 게시글이 없습니다.</td></tr>';
                     return;
                 }
 
-                data.forEach(item => {
+                data.forEach((item, index) => {
                     const date = item.created_at ? new Date(item.created_at).toLocaleDateString('ko-KR') : '방금 전';
+                    const contentId = `content-${index}`;
 
-                    const tr = document.createElement('tr');
-                    tr.innerHTML = `
-                        <td><strong>${escapeHtml(item.title)}</strong><br><small style="color:#666">${escapeHtml(item.content)}</small></td>
+                    // 1) 제목 행 (클릭 가능)
+                    const trTitle = document.createElement('tr');
+                    trTitle.className = 'post-row';
+                    trTitle.onclick = () => toggleContent(contentId);
+                    trTitle.innerHTML = `
+                        <td class="post-title">💬 ${escapeHtml(item.title)}</td>
                         <td class="writer-col">${escapeHtml(item.writer)}</td>
                         <td class="date-col">${date}</td>
                     `;
-                    listElement.appendChild(tr);
+
+                    // 2) 내용 행 (기본 숨김)
+                    const trContent = document.createElement('tr');
+                    trContent.id = contentId;
+                    trContent.className = 'content-row';
+                    trContent.innerHTML = `
+                        <td colspan="3">
+                            <div class="content-box">
+                                <strong>[글 내용]</strong><br>
+                                ${escapeHtml(item.content)}
+                            </div>
+                        </td>
+                    `;
+
+                    listElement.appendChild(trTitle);
+                    listElement.appendChild(trContent);
                 });
             } catch (err) {
                 console.error('글 불러오기 실패:', err);
-                listElement.innerHTML = '<tr><td colspan="3" style="text-align: center; color: red;">게시글을 불러오지 못했습니다.</td></tr>';
+                listElement.innerHTML = `<tr><td colspan="3" style="text-align: center; color: red;">오류 발생: ${err.message}</td></tr>`;
             }
         }
 
-        // [기능 2] 게시글 저장하기 (Create)
-        async function writePost() {
+        // [기능 2] 게시글 저장하기
+        window.writePost = async function() {
             const writer = document.getElementById('writer').value.trim();
             const title = document.getElementById('title').value.trim();
             const content = document.getElementById('content').value.trim();
@@ -177,27 +153,37 @@
 
                 alert('글이 성공적으로 등록되었습니다!');
 
-                // Input 초기화
                 document.getElementById('writer').value = '';
                 document.getElementById('title').value = '';
                 document.getElementById('content').value = '';
 
-                // 목록 갱신
                 loadPosts();
             } catch (err) {
                 console.error('글 작성 실패:', err);
-                alert('글 등록 중 오류가 발생했습니다.');
+                alert('글 등록 실패: ' + err.message);
             }
-        }
+        };
 
-        // XSS 대리 방지용 함수
+        // [기능 3] 제목 클릭 시 내용 토글(열기/닫기) 함수
+        window.toggleContent = function(id) {
+            const target = document.getElementById(id);
+            if (target.style.display === 'table-row') {
+                target.style.display = 'none';
+            } else {
+                // 다른 열려있는 글들 닫기
+                document.querySelectorAll('.content-row').forEach(row => row.style.display = 'none');
+                target.style.display = 'table-row';
+            }
+        };
+
+        // XSS 방지 함수
         function escapeHtml(text) {
             return text
                 ? text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;")
                 : '';
         }
 
-        // 첫 로딩 시 목록 실행
+        // 첫 로딩 시 실행
         loadPosts();
     </script>
 </body>
