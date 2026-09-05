@@ -13,6 +13,7 @@
         .post-info { font-size: 14px; color: #666; display: flex; gap: 15px; }
         
         .post-content { line-height: 1.8; color: #444; min-height: 200px; white-space: pre-wrap; font-size: 16px; margin-bottom: 30px; }
+        .post-content img { max-width: 100%; height: auto; display: block; margin: 10px 0; }
         
         .btn-group { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #eee; padding-top: 20px; }
         .btn { padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
@@ -41,7 +42,6 @@
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // URL 파라미터에서 게시글 타이틀(title) 가져오기
         const urlParams = new URLSearchParams(window.location.search);
         const postTitle = urlParams.get('title');
 
@@ -52,7 +52,7 @@
 
             if (!postTitle) {
                 alert('잘못된 접근입니다.');
-                location.href = 'board.html';
+                location.href = '_layouts/board.html';
                 return;
             }
 
@@ -76,9 +76,9 @@
                             <span><strong>작성일:</strong> ${date}</span>
                         </div>
                     </div>
-                    <div class="post-content">${escapeHtml(data.content)}</div>
+                    <div class="post-content">${data.content}</div>
                     <div class="btn-group">
-                        <a href="board.html" class="btn btn-list">📋 목록으로</a>
+                        <a href="_layouts/board.html" class="btn btn-list">📋 목록으로</a>
                         <button onclick="deleteCurrentPost()" class="btn btn-delete">🗑️ 게시물 삭제</button>
                     </div>
                 `;
@@ -88,7 +88,6 @@
             }
         }
 
-        // 삭제 처리 함수
         window.deleteCurrentPost = async function() {
             const inputPassword = prompt("글 등록 시 설정한 비밀번호를 입력하세요:");
             if (inputPassword === null) return;
